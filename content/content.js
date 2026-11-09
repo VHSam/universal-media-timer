@@ -161,7 +161,7 @@ function showToast() {
   // Авто-скрытие через 5 секунд
   setTimeout(() => {
     removeToast();
-  }, 5000);
+  }, 15000);
 }
 
 function removeToast() {
