@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "Universal Media Timer",
+    "description": "Extension name"
+  },
+  "extDesc": {
+    "message": "Sleep timer for any video and audio in your browser.",
+    "description": "Extension description"
+  }
+}

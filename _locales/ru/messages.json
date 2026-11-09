@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "Universal Media Timer",
+    "description": "Extension name"
+  },
+  "extDesc": {
+    "message": "Универсальный таймер сна для любого видео и аудио в браузере.",
+    "description": "Extension description"
+  }
+}
