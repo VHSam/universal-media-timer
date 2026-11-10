@@ -1,12 +1,9 @@
-// Слушаем команды от background.js
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "PAUSE_ALL") {
     const count = pauseAllMedia();
-    // Если мы в главном окне и что-то поставили на паузу, или если мы в iframe
     if (window.top === window) {
       if (count > 0) showToast();
     } else {
-      // Если мы в iframe, отправляем сигнал наверх, чтобы главное окно показало тост
       if (count > 0) window.top.postMessage({ action: "SHOW_UMT_TOAST" }, "*");
     }
   } else if (message.action === "RESUME_ALL") {
@@ -15,7 +12,6 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Слушаем сигнал от iframe'ов
 window.addEventListener("message", (event) => {
   if (event.data && event.data.action === "SHOW_UMT_TOAST" && window.top === window) {
     showToast();
@@ -49,15 +45,22 @@ function pauseAllMedia() {
     }
   });
 
-  // УРОВЕНЬ 3: Клики по кнопкам (Яндекс.Музыка и др.)
-  // Ищем кнопку с aria-label="Пауза"
+  // --- УРОВЕНЬ 3: Клики по кнопкам ---
+  
+  // 1. Яндекс.Музыка (по aria-label)
   const yandexPauseBtn = document.querySelector('button[aria-label="Пауза"]');
   if (yandexPauseBtn) {
     yandexPauseBtn.click();
     pausedCount++;
   }
 
-  // Сюда мы потом добавим VK, Deezer и SoundCloud
+  // 2. VK Музыка (по data-testid)
+  // Ищем кнопку по testid. Проверяем, что текст внутри "Пауза" (значит, музыка играет).
+  const vkMusicBtn = document.querySelector('[data-testid="audio-player-controls-state-button"]');
+  if (vkMusicBtn && vkMusicBtn.textContent.includes('Пауза')) {
+    vkMusicBtn.click();
+    pausedCount++;
+  }
 
   return pausedCount;
 }
@@ -74,16 +77,23 @@ function resumeAllMedia() {
     } catch (e) {}
   });
 
-  // УРОВЕНЬ 3: Клик по кнопке "Воспроизведение" (Яндекс.Музыка)
+  // --- УРОВЕНЬ 3: Клики по кнопкам (Возобновление) ---
+  
+  // 1. Яндекс.Музыка (вы нашли, что там "воспроизведение")
   const yandexPlayBtn = document.querySelector('button[aria-label="Воспроизведение"]');
   if (yandexPlayBtn) {
     yandexPlayBtn.click();
   }
+
+  // 2. VK Музыка
+  // Если кнопка есть и текст внутри НЕ "Пауза" (значит, стоит на паузе), кликаем.
+  const vkMusicBtn = document.querySelector('[data-testid="audio-player-controls-state-button"]');
+  if (vkMusicBtn && !vkMusicBtn.textContent.includes('Пауза')) {
+    vkMusicBtn.click();
+  }
 }
 
-// --- ТОСТ (БЕЗ ИЗМЕНЕНИЙ, НО НАПОМИНАЮ ПРО 15 СЕКУНД) ---
-let toastElement = null;
-
+// --- ТОСТ ---
 function showToast() {
   if (document.getElementById('umt-toast-host')) return;
   const host = document.createElement('div');
@@ -112,8 +122,6 @@ function showToast() {
   `;
   shadow.getElementById('btn-resume').addEventListener('click', () => { resumeAllMedia(); removeToast(); });
   shadow.getElementById('btn-close').addEventListener('click', () => { removeToast(); });
-  
-  // 15 СЕКУНД
   setTimeout(() => { removeToast(); }, 15000);
 }
 
