@@ -11,7 +11,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     removeToast();
   }
 });
-
+//
 window.addEventListener("message", (event) => {
   if (event.data && event.data.action === "SHOW_UMT_TOAST" && window.top === window) {
     showToast();
