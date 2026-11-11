@@ -1,4 +1,8 @@
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+ if (message.action === "PING") {
+    sendResponse({ status: "pong" });
+    return; // Завершаем выполнение
+  }
   if (message.action === "PAUSE_ALL") {
     const count = pauseAllMedia();
     if (window.top === window) {
