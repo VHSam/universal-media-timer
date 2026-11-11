@@ -11,7 +11,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     removeToast();
   }
 });
-//
+
 window.addEventListener("message", (event) => {
   if (event.data && event.data.action === "SHOW_UMT_TOAST" && window.top === window) {
     showToast();
@@ -30,14 +30,19 @@ function findMediaElements(root = document) {
   return elements;
 }
 
-// 1. Логика паузы
+// 1. Логика паузы (Оставляем как было, она работает)
 function pauseAllMedia() {
   const mediaElements = findMediaElements();
   let pausedCount = 0;
   
-  // Стандартные теги
+  const hostname = window.location.hostname;
+  const isDeezer = hostname.includes('deezer.com');
+  const isYandex = hostname.includes('music.yandex');
+  const isVK = hostname.includes('vk.com');
+  const isSoundCloud = hostname.includes('soundcloud.com');
+
   mediaElements.forEach(el => {
-    if (!el.paused) {
+    if (!el.paused && !isDeezer && !isSoundCloud) {
       try {
         el.pause();
         pausedCount++;
@@ -45,30 +50,41 @@ function pauseAllMedia() {
     }
   });
 
-  // --- УРОВЕНЬ 3: Клики по кнопкам ---
-  
-  // 1. Яндекс.Музыка (по aria-label)
-  const yandexPauseBtn = document.querySelector('button[aria-label="Пауза"]');
-  if (yandexPauseBtn) {
-    yandexPauseBtn.click();
-    pausedCount++;
+  if (isYandex) {
+    const btn = document.querySelector('button[aria-label="Пауза"]');
+    if (btn) { btn.click(); pausedCount++; }
   }
 
-  // 2. VK Музыка (по data-testid)
-  // Ищем кнопку по testid. Проверяем, что текст внутри "Пауза" (значит, музыка играет).
-  const vkMusicBtn = document.querySelector('[data-testid="audio-player-controls-state-button"]');
-  if (vkMusicBtn && vkMusicBtn.textContent.includes('Пауза')) {
-    vkMusicBtn.click();
+  if (isVK) {
+    const btn = document.querySelector('[data-testid="audio-player-controls-state-button"]');
+    if (btn && btn.textContent.includes('Пауза')) { btn.click(); pausedCount++; }
+  }
+
+  if (isDeezer || isSoundCloud) {
+    const spaceEvent = new KeyboardEvent('keydown', {
+      key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true
+    });
+    document.body.dispatchEvent(spaceEvent);
     pausedCount++;
   }
 
   return pausedCount;
 }
 
-// 2. Логика возобновления
+// 2. Логика возобновления (ИСПРАВЛЕНА)
 function resumeAllMedia() {
   const mediaElements = findMediaElements();
+  
+  const hostname = window.location.hostname;
+  const isDeezer = hostname.includes('deezer.com');
+  const isYandex = hostname.includes('music.yandex');
+  const isVK = hostname.includes('vk.com');
+  const isSoundCloud = hostname.includes('soundcloud.com');
+
+  // Уровень 1: Теги (кроме Deezer и SoundCloud)
   mediaElements.forEach(el => {
+    if (isDeezer || isSoundCloud) return;
+
     try {
       const playPromise = el.play();
       if (playPromise !== undefined) {
@@ -77,23 +93,36 @@ function resumeAllMedia() {
     } catch (e) {}
   });
 
-  // --- УРОВЕНЬ 3: Клики по кнопкам (Возобновление) ---
-  
-  // 1. Яндекс.Музыка (вы нашли, что там "воспроизведение")
-  const yandexPlayBtn = document.querySelector('button[aria-label="Воспроизведение"]');
-  if (yandexPlayBtn) {
-    yandexPlayBtn.click();
+  // Уровень 3: Клики по кнопкам
+  if (isYandex) {
+    const btn = document.querySelector('button[aria-label="Воспроизведение"]');
+    if (btn) btn.click();
   }
 
-  // 2. VK Музыка
-  // Если кнопка есть и текст внутри НЕ "Пауза" (значит, стоит на паузе), кликаем.
-  const vkMusicBtn = document.querySelector('[data-testid="audio-player-controls-state-button"]');
-  if (vkMusicBtn && !vkMusicBtn.textContent.includes('Пауза')) {
-    vkMusicBtn.click();
+  if (isVK) {
+    const btn = document.querySelector('[data-testid="audio-player-controls-state-button"]');
+    if (btn && !btn.textContent.includes('Пауза')) btn.click();
+  }
+
+  // Уровень 4: Симуляция пробела (ТОЛЬКО ДЛЯ DEEZER)
+  if (isDeezer) {
+    const spaceEvent = new KeyboardEvent('keydown', {
+      key: ' ', code: 'Space', keyCode: 32, which: 32, bubbles: true
+    });
+    document.body.dispatchEvent(spaceEvent);
+  }
+
+  // Уровень 5: Прямой клик по кнопке SoundCloud
+  if (isSoundCloud) {
+    // Ищем кнопку, которая отвечает за запуск
+    const scPlayBtn = document.querySelector('button[aria-label="Play current"]');
+    if (scPlayBtn) {
+      scPlayBtn.click();
+    }
   }
 }
 
-// --- ТОСТ ---
+// --- ТОСТ (Без изменений) ---
 function showToast() {
   if (document.getElementById('umt-toast-host')) return;
   const host = document.createElement('div');
